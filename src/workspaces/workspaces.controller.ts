@@ -29,12 +29,14 @@ export class WorkspacesController {
   // }
 
   @Get()
-  list() {
-    return { data: this.service.findAll() };
+  async list() {
+    const data = await this.service.findAll();
+    return { data };
   }
 
   @Post()
-  create(@Body() body: CreateWorkspaceDto) {
-    return { data: this.service.createWorkspace(body.name) };
+  async create(@Body() body: CreateWorkspaceDto) {
+    const workspace = await this.service.createWorkspace(body.name);
+    return { data: workspace };
   }
 }

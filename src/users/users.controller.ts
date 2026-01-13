@@ -10,19 +10,19 @@ export class UsersController {
 
   @Post()
   @ApiOperation({ summary: 'Create user' })
-  create(@Body() body: CreateUserDto) {
+  async create(@Body() body: CreateUserDto) {
     return this.usersService.createUser(body);
   }
 
   @Get()
   @ApiOperation({ summary: 'List users' })
-  list() {
+  async list() {
     return this.usersService.listUsers();
   }
 
   @Get(':userGid')
   @ApiOperation({ summary: 'Get user by GID' })
-  getById(@Param('userGid') userGid: string) {
+  async getById(@Param('userGid') userGid: string) {
     return this.usersService.getUserById(userGid);
   }
 }

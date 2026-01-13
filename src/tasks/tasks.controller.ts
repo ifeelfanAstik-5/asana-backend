@@ -10,7 +10,7 @@ export class TasksController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new task' })
-  create(@Body() body: CreateTaskDto) {
+  async create(@Body() body: CreateTaskDto) {
     return this.tasksService.createTask({
       name: body.name,
       projectGid: body.projectGid,
@@ -19,22 +19,19 @@ export class TasksController {
 
   @Get()
   @ApiOperation({ summary: 'List all tasks' })
-  list() {
+  async list() {
     return this.tasksService.listTasks();
   }
 
-
-
-
   @Get('project/:projectGid')
   @ApiOperation({ summary: 'List tasks by project' })
-  getByProject(@Param('projectGid') projectGid: string) {
+  async getByProject(@Param('projectGid') projectGid: string) {
     return this.tasksService.getByProject(projectGid);
   }
 
   @Get(':taskGid')
   @ApiOperation({ summary: 'Get task by GID' })
-  getById(@Param('taskGid') taskGid: string) {
+  async getById(@Param('taskGid') taskGid: string) {
     return this.tasksService.getByIdWrapped(taskGid);
   }
 }

@@ -10,7 +10,7 @@ export class ProjectsController {
 
   @Post()
   @ApiOperation({ summary: 'Create project' })
-  create(@Body() body: CreateProjectDto) {
+  async create(@Body() body: CreateProjectDto) {
     return this.projectsService.createProject({
       name: body.name,
       workspaceGid: body.workspaceGid,
@@ -19,19 +19,19 @@ export class ProjectsController {
 
   @Get()
   @ApiOperation({ summary: 'List projects' })
-  list() {
+  async list() {
     return this.projectsService.listProjects();
   }
 
   @Get('workspace/:workspaceGid')
   @ApiOperation({ summary: 'List projects by workspace' })
-  getByWorkspace(@Param('workspaceGid') workspaceGid: string) {
+  async getByWorkspace(@Param('workspaceGid') workspaceGid: string) {
     return this.projectsService.getByWorkspace(workspaceGid);
   }
 
   @Get(':projectGid')
   @ApiOperation({ summary: 'Get project by GID' })
-  getById(@Param('projectGid') projectGid: string) {
+  async getById(@Param('projectGid') projectGid: string) {
     return this.projectsService.getByIdWrapped(projectGid);
   }
 }

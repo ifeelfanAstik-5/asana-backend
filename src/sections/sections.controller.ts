@@ -10,13 +10,13 @@ export class SectionsController {
 
   @Post()
   @ApiOperation({ summary: 'Create section' })
-  create(@Body() body: CreateSectionDto) {
+  async create(@Body() body: CreateSectionDto) {
     return this.sectionsService.createSection(body);
   }
 
   @Get()
   @ApiOperation({ summary: 'List sections (optionally by project)' })
-  list(@Query('projectGid') projectGid?: string) {
+  async list(@Query('projectGid') projectGid?: string) {
     if (projectGid) {
       return this.sectionsService.listSectionsByProject(projectGid);
     }
@@ -25,7 +25,7 @@ export class SectionsController {
 
   @Get(':sectionGid')
   @ApiOperation({ summary: 'Get section by GID' })
-  getById(@Param('sectionGid') sectionGid: string) {
+  async getById(@Param('sectionGid') sectionGid: string) {
     return this.sectionsService.getSectionById(sectionGid);
   }
 }

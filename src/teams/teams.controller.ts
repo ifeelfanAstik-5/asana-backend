@@ -10,13 +10,13 @@ export class TeamsController {
 
   @Post()
   @ApiOperation({ summary: 'Create team' })
-  create(@Body() body: CreateTeamDto) {
+  async create(@Body() body: CreateTeamDto) {
     return this.teamsService.createTeam(body);
   }
 
   @Get()
   @ApiOperation({ summary: 'List teams (optionally by workspace)' })
-  list(@Query('workspaceGid') workspaceGid?: string) {
+  async list(@Query('workspaceGid') workspaceGid?: string) {
     if (workspaceGid) {
       return this.teamsService.listTeamsByWorkspace(workspaceGid);
     }
@@ -25,7 +25,7 @@ export class TeamsController {
 
   @Get(':teamGid')
   @ApiOperation({ summary: 'Get team by GID' })
-  getById(@Param('teamGid') teamGid: string) {
+  async getById(@Param('teamGid') teamGid: string) {
     return this.teamsService.getTeamById(teamGid);
   }
 }

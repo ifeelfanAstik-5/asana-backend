@@ -10,13 +10,13 @@ export class TagsController {
 
   @Post()
   @ApiOperation({ summary: 'Create tag' })
-  create(@Body() body: CreateTagDto) {
+  async create(@Body() body: CreateTagDto) {
     return this.tagsService.createTag(body);
   }
 
   @Get()
   @ApiOperation({ summary: 'List tags (optionally by workspace)' })
-  list(@Query('workspaceGid') workspaceGid?: string) {
+  async list(@Query('workspaceGid') workspaceGid?: string) {
     if (workspaceGid) {
       return this.tagsService.listTagsByWorkspace(workspaceGid);
     }
@@ -25,7 +25,7 @@ export class TagsController {
 
   @Get(':tagGid')
   @ApiOperation({ summary: 'Get tag by GID' })
-  getById(@Param('tagGid') tagGid: string) {
+  async getById(@Param('tagGid') tagGid: string) {
     return this.tagsService.getTagById(tagGid);
   }
 }
