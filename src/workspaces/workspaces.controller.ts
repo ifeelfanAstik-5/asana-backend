@@ -30,13 +30,11 @@ export class WorkspacesController {
 
   @Get()
   async list() {
-    const data = await this.service.findAll();
-    return { data };
+    return this.service.findAll();
   }
 
   @Post()
   async create(@Body() body: CreateWorkspaceDto) {
-    const workspace = await this.service.createWorkspace(body.name);
-    return { data: workspace };
+    return this.service.createWorkspace(body.name, body.gid);
   }
 }

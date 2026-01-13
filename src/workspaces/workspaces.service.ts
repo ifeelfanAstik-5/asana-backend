@@ -5,10 +5,10 @@ import { PrismaService } from '../prisma/prisma.service';
 export class WorkspacesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createWorkspace(name: string) {
+  async createWorkspace(name: string, gid?: string) {
     return this.prisma.workspace.create({
       data: {
-        gid: crypto.randomUUID(),
+        gid: gid || crypto.randomUUID(),
         name,
       },
     });

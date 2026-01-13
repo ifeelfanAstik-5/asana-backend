@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -14,6 +14,7 @@ export class ProjectsController {
     return this.projectsService.createProject({
       name: body.name,
       workspaceGid: body.workspaceGid,
+      gid: body.gid,
     });
   }
 
@@ -32,6 +33,10 @@ export class ProjectsController {
   @Get(':projectGid')
   @ApiOperation({ summary: 'Get project by GID' })
   async getById(@Param('projectGid') projectGid: string) {
-    return this.projectsService.getByIdWrapped(projectGid);
+    const project = await this.projectsService.getById(projectGid);
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+    return project;
   }
 }

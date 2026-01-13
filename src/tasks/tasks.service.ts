@@ -9,7 +9,18 @@ export class TasksService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async createTask(payload: { name: string; projectGid: string }) {
+  private async transformTask(task: any) {
+    // Get the project to retrieve projectGid
+    const project = await this.prisma.project.findUnique({
+      where: { id: task.projectId },
+    });
+    return {
+      ...task,
+      projectGid: project?.gid,
+    };
+  }
+
+  async createTask(payload: { name: string; projectGid: string; workspaceGid: string; gid?: string; notes?: string; completed?: boolean }) {
     if (!payload || !payload.name || !payload.projectGid) {
       return { error: 'Task name and projectGid required' };
     }
@@ -21,32 +32,49 @@ export class TasksService {
 
     const task = await this.prisma.task.create({
       data: {
-        gid: crypto.randomUUID(),
+        gid: payload.gid || crypto.randomUUID(),
         name: payload.name,
+        notes: payload.notes,
+        completed: payload.completed || false,
         project: { connect: { gid: payload.projectGid } },
         workspace: { connect: { id: project.workspaceId } },
       },
     });
 
-    return { data: task };
+    return this.transformTask(task);
   }
 
   async listTasks() {
-    const data = await this.prisma.task.findMany();
-    return { data };
+    const tasks = await this.prisma.task.findMany();
+    return Promise.all(tasks.map(task => this.transformTask(task)));
   }
 
   async getByProject(projectGid: string) {
-    const data = await this.prisma.task.findMany({
+    const tasks = await this.prisma.task.findMany({
       where: { project: { gid: projectGid } },
     });
-    return { data };
+    return Promise.all(tasks.map(task => this.transformTask(task)));
   }
 
-  async getByIdWrapped(taskGid: string) {
+  async getById(taskGid: string) {
     const task = await this.prisma.task.findUnique({
       where: { gid: taskGid },
     });
-    return { data: task ?? null };
+    if (!task) return null;
+    return this.transformTask(task);
+  }
+
+  async updateTask(taskGid: string, data: any) {
+    const task = await this.prisma.task.update({
+      where: { gid: taskGid },
+      data,
+    });
+    return this.transformTask(task);
+  }
+
+  async deleteTask(taskGid: string) {
+    return this.prisma.task.delete({
+      where: { gid: taskGid },
+    });
   }
 }

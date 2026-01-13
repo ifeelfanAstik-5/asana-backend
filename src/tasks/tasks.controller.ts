@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Patch, Delete, HttpCode, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -11,15 +11,29 @@ export class TasksController {
   @Post()
   @ApiOperation({ summary: 'Create a new task' })
   async create(@Body() body: CreateTaskDto) {
-    return this.tasksService.createTask({
+    const result = await this.tasksService.createTask({
       name: body.name,
       projectGid: body.projectGid,
+      workspaceGid: body.workspaceGid,
+      gid: body.gid,
+      notes: body.notes,
+      completed: body.completed,
     });
+    
+    // Check if there was an error
+    if (result && typeof result === 'object' && 'error' in result) {
+      throw new BadRequestException(result.error);
+    }
+    
+    return result;
   }
 
   @Get()
   @ApiOperation({ summary: 'List all tasks' })
-  async list() {
+  async list(@Query('project') projectGid?: string) {
+    if (projectGid) {
+      return this.tasksService.getByProject(projectGid);
+    }
     return this.tasksService.listTasks();
   }
 
@@ -32,6 +46,31 @@ export class TasksController {
   @Get(':taskGid')
   @ApiOperation({ summary: 'Get task by GID' })
   async getById(@Param('taskGid') taskGid: string) {
-    return this.tasksService.getByIdWrapped(taskGid);
+    const task = await this.tasksService.getById(taskGid);
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+    return task;
+  }
+
+  @Patch(':taskGid')
+  @ApiOperation({ summary: 'Update task' })
+  async update(@Param('taskGid') taskGid: string, @Body() body: any) {
+    const task = await this.tasksService.getById(taskGid);
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+    return this.tasksService.updateTask(taskGid, body);
+  }
+
+  @Delete(':taskGid')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Delete task' })
+  async delete(@Param('taskGid') taskGid: string) {
+    const task = await this.tasksService.getById(taskGid);
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+    return this.tasksService.deleteTask(taskGid);
   }
 }
