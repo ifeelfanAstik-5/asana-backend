@@ -1,25 +1,40 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { WorkspacesService } from './workspaces.service';
 
 @ApiTags('Workspaces')
 @Controller('workspaces')
 export class WorkspacesController {
   private workspaces: any[] = [];
 
+
+  constructor(private service: WorkspacesService) {}
+
+  // @Get()
+  // @ApiOperation({ summary: 'List workspaces' })
+  // list() {
+  //   return { data: this.workspaces };
+  // }
+
+  // @Post()
+  // @ApiOperation({ summary: 'Create workspace' })
+  // create(@Body() body: any) {
+  //   const workspace = {
+  //     gid: Date.now().toString(),
+  //     name: body.name ?? 'My Workspace',
+  //   };
+  //   this.workspaces.push(workspace);
+  //   return { data: workspace };
+  // }
+
   @Get()
-  @ApiOperation({ summary: 'List workspaces' })
   list() {
-    return { data: this.workspaces };
+    return { data: this.service.findAll() };
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create workspace' })
   create(@Body() body: any) {
-    const workspace = {
-      gid: Date.now().toString(),
-      name: body.name ?? 'My Workspace',
-    };
-    this.workspaces.push(workspace);
-    return { data: workspace };
+    const name = body?.name ?? 'My Workspace';
+    return { data: this.service.createWorkspace(name) };
   }
 }
