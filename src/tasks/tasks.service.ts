@@ -25,6 +25,7 @@ export class TasksService extends InMemoryRepository<Task> {
       projectGid: payload.projectGid,
       completed: false,
       createdAt: new Date().toISOString(),
+      workspaceGid: project.workspaceGid,
     };
 
     this.create(task);

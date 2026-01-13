@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -9,8 +10,11 @@ export class ProjectsController {
 
   @Post()
   @ApiOperation({ summary: 'Create project' })
-  create(@Body() body: any) {
-    return this.projectsService.createProject(body);
+  create(@Body() body: CreateProjectDto) {
+    return this.projectsService.createProject({
+      name: body.name,
+      workspaceGid: body.workspaceGid,
+    });
   }
 
   @Get()

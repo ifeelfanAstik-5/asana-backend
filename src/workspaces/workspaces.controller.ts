@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { WorkspacesService } from './workspaces.service';
+import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 
 @ApiTags('Workspaces')
 @Controller('workspaces')
@@ -33,8 +34,7 @@ export class WorkspacesController {
   }
 
   @Post()
-  create(@Body() body: any) {
-    const name = body?.name ?? 'My Workspace';
-    return { data: this.service.createWorkspace(name) };
+  create(@Body() body: CreateWorkspaceDto) {
+    return { data: this.service.createWorkspace(body.name) };
   }
 }
