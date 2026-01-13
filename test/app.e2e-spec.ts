@@ -16,6 +16,10 @@ describe('Asana Backend Replica (e2e)', () => {
   let sharedTagGid: string;
   let sharedTeamGid: string;
   let sharedSectionGid: string;
+  let sharedGoalGid: string;
+  let sharedStoryGid: string;
+  let sharedWorkspaceMembershipGid: string;
+  let sharedTeamMembershipGid: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -37,11 +41,14 @@ describe('Asana Backend Replica (e2e)', () => {
 
   afterAll(async () => {
     // Clean up test data to ensure repeatable runs
+    await prisma.story.deleteMany();
     await prisma.task.deleteMany();
     await prisma.section.deleteMany();
     await prisma.project.deleteMany();
     await prisma.tag.deleteMany();
+    await prisma.teamMembership.deleteMany();
     await prisma.team.deleteMany();
+    await prisma.workspaceMembership.deleteMany();
     await prisma.user.deleteMany();
     await prisma.workspace.deleteMany();
     await app.close();
@@ -389,4 +396,241 @@ describe('Asana Backend Replica (e2e)', () => {
         .get('/sections/non_existent_section')
         .expect(404);
     });
-  });});
+  });
+
+  describe('Goals Endpoint', () => {
+    it('POST /goals - Should create a goal', async () => {
+      const payload = {
+        name: 'Q1 Growth',
+        workspaceGid: sharedWorkspaceGid,
+        gid: 'goal_101'
+      };
+      const response = await request(app.getHttpServer())
+        .post('/goals')
+        .send(payload)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        name: payload.name,
+        gid: payload.gid
+      });
+      sharedGoalGid = response.body.gid;
+    });
+
+    it('POST /goals - [Edge Case] Fail on missing name', async () => {
+      await request(app.getHttpServer())
+        .post('/goals')
+        .send({ workspaceGid: sharedWorkspaceGid, gid: 'goal_fail' })
+        .expect(400);
+    });
+
+    it('GET /goals - Should list all goals', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/goals')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+    });
+
+    it('GET /goals?workspaceGid=:gid - Should filter goals by workspace', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/goals?workspaceGid=${sharedWorkspaceGid}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('GET /goals/:gid - Should get goal by GID', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/goals/${sharedGoalGid}`)
+        .expect(200);
+
+      expect(response.body.gid).toBe(sharedGoalGid);
+    });
+
+    it('GET /goals/:gid - [Edge Case] 404 for invalid Goal ID', async () => {
+      await request(app.getHttpServer())
+        .get('/goals/non_existent_goal')
+        .expect(404);
+    });
+  });
+
+  describe('Stories Endpoint', () => {
+    it('POST /stories - Should create a story/comment on task', async () => {
+      const payload = {
+        text: 'This is a comment',
+        taskGid: sharedTaskGid,
+        gid: 'story_101'
+      };
+      const response = await request(app.getHttpServer())
+        .post('/stories')
+        .send(payload)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        text: payload.text,
+        gid: payload.gid
+      });
+      sharedStoryGid = response.body.gid;
+    });
+
+    it('POST /stories - [Edge Case] Fail on missing text', async () => {
+      await request(app.getHttpServer())
+        .post('/stories')
+        .send({ taskGid: sharedTaskGid, gid: 'story_fail' })
+        .expect(400);
+    });
+
+    it('GET /stories - Should list all stories', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/stories')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('GET /stories?taskGid=:gid - Should filter stories by task', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/stories?taskGid=${sharedTaskGid}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      if (response.body.length > 0) {
+        expect(response.body[0].taskId).toBeDefined();
+      }
+    });
+
+    it('GET /stories/:gid - Should get story by GID', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/stories/${sharedStoryGid}`)
+        .expect(200);
+
+      expect(response.body.gid).toBe(sharedStoryGid);
+    });
+
+    it('GET /stories/:gid - [Edge Case] 404 for invalid Story ID', async () => {
+      await request(app.getHttpServer())
+        .get('/stories/non_existent_story')
+        .expect(404);
+    });
+  });
+
+  describe('WorkspaceMembership Endpoint', () => {
+    it('POST /workspace-memberships - Should add user to workspace', async () => {
+      const payload = {
+        userGid: sharedUserGid,
+        workspaceGid: sharedWorkspaceGid,
+        role: 'member',
+        gid: 'wm_101'
+      };
+      const response = await request(app.getHttpServer())
+        .post('/workspace-memberships')
+        .send(payload)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        role: payload.role,
+        gid: payload.gid
+      });
+      sharedWorkspaceMembershipGid = response.body.gid;
+    });
+
+    it('POST /workspace-memberships - [Edge Case] Fail on missing userGid', async () => {
+      await request(app.getHttpServer())
+        .post('/workspace-memberships')
+        .send({ workspaceGid: sharedWorkspaceGid, role: 'member', gid: 'wm_fail' })
+        .expect(400);
+    });
+
+    it('GET /workspace-memberships - Should list all workspace memberships', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/workspace-memberships')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('GET /workspace-memberships?workspaceGid=:gid - Should filter by workspace', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/workspace-memberships?workspaceGid=${sharedWorkspaceGid}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+    });
+
+    it('GET /workspace-memberships/:gid - Should get membership by GID', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/workspace-memberships/${sharedWorkspaceMembershipGid}`)
+        .expect(200);
+
+      expect(response.body.gid).toBe(sharedWorkspaceMembershipGid);
+    });
+
+    it('GET /workspace-memberships/:gid - [Edge Case] 404 for invalid Membership ID', async () => {
+      await request(app.getHttpServer())
+        .get('/workspace-memberships/non_existent_membership')
+        .expect(404);
+    });
+  });
+
+  describe('TeamMembership Endpoint', () => {
+    it('POST /team-memberships - Should add user to team', async () => {
+      const payload = {
+        userGid: sharedUserGid,
+        teamGid: sharedTeamGid,
+        role: 'member',
+        gid: 'tm_101'
+      };
+      const response = await request(app.getHttpServer())
+        .post('/team-memberships')
+        .send(payload)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        role: payload.role,
+        gid: payload.gid
+      });
+      sharedTeamMembershipGid = response.body.gid;
+    });
+
+    it('POST /team-memberships - [Edge Case] Fail on missing userGid', async () => {
+      await request(app.getHttpServer())
+        .post('/team-memberships')
+        .send({ teamGid: sharedTeamGid, role: 'member', gid: 'tm_fail' })
+        .expect(400);
+    });
+
+    it('GET /team-memberships - Should list all team memberships', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/team-memberships')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('GET /team-memberships?teamGid=:gid - Should filter by team', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/team-memberships?teamGid=${sharedTeamGid}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+    });
+
+    it('GET /team-memberships/:gid - Should get membership by GID', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/team-memberships/${sharedTeamMembershipGid}`)
+        .expect(200);
+
+      expect(response.body.gid).toBe(sharedTeamMembershipGid);
+    });
+
+    it('GET /team-memberships/:gid - [Edge Case] 404 for invalid Membership ID', async () => {
+      await request(app.getHttpServer())
+        .get('/team-memberships/non_existent_membership')
+        .expect(404);
+    });
+  });
+});

@@ -25,6 +25,7 @@ model Workspace {
   teams     Team[]
   members   WorkspaceMembership[]
   tasks     Task[]
+  goals     Goal[]
 }
 
 model User {
@@ -157,6 +158,16 @@ model Story {
   taskId      String
   createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdById String?
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  gid         String    @unique
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
 }
 
 enum WorkspaceRole {
