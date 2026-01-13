@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateWorkspaceMembershipDto {
   @IsString()
@@ -16,4 +17,10 @@ export class CreateWorkspaceMembershipDto {
   @IsString()
   @IsOptional()
   role?: string;
+}
+
+export class CreateWorkspaceMembershipRequestDto {
+  @ValidateNested()
+  @Type(() => CreateWorkspaceMembershipDto)
+  data: CreateWorkspaceMembershipDto;
 }

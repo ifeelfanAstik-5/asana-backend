@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateTeamMembershipDto {
   @IsString()
@@ -16,4 +17,10 @@ export class CreateTeamMembershipDto {
   @IsString()
   @IsOptional()
   role?: string;
+}
+
+export class CreateTeamMembershipRequestDto {
+  @ValidateNested()
+  @Type(() => CreateTeamMembershipDto)
+  data: CreateTeamMembershipDto;
 }

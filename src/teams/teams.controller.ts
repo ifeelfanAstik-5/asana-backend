@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Query, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TeamsService } from './teams.service';
-import { CreateTeamDto } from './dto/create-team.dto';
+import { CreateTeamRequestDto } from './dto/create-team.dto';
 
 @ApiTags('Teams')
 @Controller('teams')
@@ -10,12 +10,12 @@ export class TeamsController {
 
   @Post()
   @ApiOperation({ summary: 'Create team' })
-  async create(@Body() body: CreateTeamDto) {
-    const result = await this.teamsService.createTeam(body);
+  async create(@Body() body: CreateTeamRequestDto) {
+    const result = await this.teamsService.createTeam(body.data);
     if (result && typeof result === 'object' && 'error' in result) {
       throw new BadRequestException(result.error);
     }
-    return result;
+    return { gid: result.gid, name: result.name };
   }
 
   @Get()

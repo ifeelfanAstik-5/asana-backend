@@ -5,5 +5,24 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "reporters": [
+    "default",
+    [
+      "jest-junit",
+      {
+        "outputDirectory": "../reports",
+        "outputName": "junit-e2e.xml"
+      }
+    ],
+    [
+      "jest-html-reporter",
+      {
+        "pageTitle": "Asana Backend E2E Test Report",
+        "outputPath": "../reports/e2e-report.html",
+        "includeFailureMsg": true,
+        "includeSuiteFailure": true
+      }
+    ]
+  ]
 }

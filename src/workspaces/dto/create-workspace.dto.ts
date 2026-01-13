@@ -1,14 +1,32 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsString, IsNotEmpty, IsOptional, ValidateNested, IsBoolean } from 'class-validator';
 
-export class CreateWorkspaceDto {
-  @ApiProperty({ example: "Acme Corp" })
+export class CreateWorkspaceDataDto {
+  // allow both gid and workspaceGid as aliases
+  @IsString()
+  @IsOptional()
+  gid?: string;
+
+  @IsString()
+  @IsOptional()
+  workspaceGid?: string;
+  
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: "ws_101", required: false })
   @IsString()
   @IsOptional()
-  gid?: string; // Added to match test payload
+  notes?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  completed?: boolean;
 }
+export class CreateWorkspaceRequestDto {
+  @ValidateNested()
+  @Type(() => CreateWorkspaceDataDto)
+  data: CreateWorkspaceDataDto;
+}
+  

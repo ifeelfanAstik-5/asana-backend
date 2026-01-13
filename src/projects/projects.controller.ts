@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
-import { CreateProjectDto } from './dto/create-project.dto';
+import { CreateProjectRequestDto } from './dto/create-project.dto';
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -10,12 +10,13 @@ export class ProjectsController {
 
   @Post()
   @ApiOperation({ summary: 'Create project' })
-  async create(@Body() body: CreateProjectDto) {
-    return this.projectsService.createProject({
-      name: body.name,
-      workspaceGid: body.workspaceGid,
-      gid: body.gid,
+  async create(@Body() body: CreateProjectRequestDto) {
+    const created = await this.projectsService.createProject({
+      name: body.data.name,
+      workspaceGid: body.data.workspaceGid,
+      gid: body.data.gid,
     });
+    return { gid: created.gid, name: created.name };
   }
 
   @Get()

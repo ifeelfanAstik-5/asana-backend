@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateGoalDto {
   @IsString()
@@ -12,4 +13,10 @@ export class CreateGoalDto {
   @IsString()
   @IsNotEmpty()
   workspaceGid: string;
+}
+
+export class CreateGoalRequestDto {
+  @ValidateNested()
+  @Type(() => CreateGoalDto)
+  data: CreateGoalDto;
 }

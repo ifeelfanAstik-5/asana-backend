@@ -1,14 +1,14 @@
 import { Controller, Post, Get, Body, Param, Query, BadRequestException, NotFoundException } from '@nestjs/common';
 import { WorkspaceMembershipsService } from './workspace-memberships.service';
-import { CreateWorkspaceMembershipDto } from './dto/create-workspace-membership.dto';
+import { CreateWorkspaceMembershipRequestDto } from './dto/create-workspace-membership.dto';
 
 @Controller('workspace-memberships')
 export class WorkspaceMembershipsController {
   constructor(private workspaceMembershipsService: WorkspaceMembershipsService) {}
 
   @Post()
-  async create(@Body() createWorkspaceMembershipDto: CreateWorkspaceMembershipDto) {
-    const result = await this.workspaceMembershipsService.create(createWorkspaceMembershipDto);
+  async create(@Body() body: CreateWorkspaceMembershipRequestDto) {
+    const result = await this.workspaceMembershipsService.create(body.data);
     if (result.error) {
       throw new BadRequestException(result.message);
     }

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateSectionDto {
   @ApiProperty({ example: 'Backlog' })
@@ -23,3 +24,8 @@ export class CreateSectionDto {
   gid?: string;
 }
 
+export class CreateSectionRequestDto {
+  @ValidateNested()
+  @Type(() => CreateSectionDto)
+  data: CreateSectionDto;
+}

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Query, Patch, Delete, HttpCode, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
-import { CreateTaskDto } from './dto/create-task.dto';
+import { CreateTaskRequestDto } from './dto/create-task.dto';
 
 @ApiTags('Tasks')
 @Controller('tasks')
@@ -10,14 +10,15 @@ export class TasksController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new task' })
-  async create(@Body() body: CreateTaskDto) {
+  async create(@Body() body: CreateTaskRequestDto) {
+    const payload = body.data;
     const result = await this.tasksService.createTask({
-      name: body.name,
-      projectGid: body.projectGid,
-      workspaceGid: body.workspaceGid,
-      gid: body.gid,
-      notes: body.notes,
-      completed: body.completed,
+      name: payload.name,
+      projectGid: payload.projectGid,
+      workspaceGid: payload.workspaceGid,
+      gid: payload.gid,
+      notes: payload.notes,
+      completed: payload.completed,
     });
     
     // Check if there was an error
@@ -25,7 +26,7 @@ export class TasksController {
       throw new BadRequestException(result.error);
     }
     
-    return result;
+    return { gid: result.gid, name: result.name };
   }
 
   @Get()
@@ -60,7 +61,8 @@ export class TasksController {
     if (!task) {
       throw new NotFoundException('Task not found');
     }
-    return this.tasksService.updateTask(taskGid, body);
+    const payload = body && 'data' in body ? body.data : body;
+    return this.tasksService.updateTask(taskGid, payload);
   }
 
   @Delete(':taskGid')

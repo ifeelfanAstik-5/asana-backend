@@ -1,18 +1,18 @@
 import { Controller, Post, Get, Body, Param, Query, BadRequestException, NotFoundException } from '@nestjs/common';
 import { GoalsService } from './goals.service';
-import { CreateGoalDto } from './dto/create-goal.dto';
+import { CreateGoalRequestDto } from './dto/create-goal.dto';
 
 @Controller('goals')
 export class GoalsController {
   constructor(private goalsService: GoalsService) {}
 
   @Post()
-  async create(@Body() createGoalDto: CreateGoalDto) {
-    const result = await this.goalsService.create(createGoalDto);
+  async create(@Body() body: CreateGoalRequestDto) {
+    const result = await this.goalsService.create(body.data);
     if (result.error) {
       throw new BadRequestException(result.message);
     }
-    return result;
+    return { gid: result.gid, name: result.name };
   }
 
   @Get()

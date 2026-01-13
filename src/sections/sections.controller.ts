@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Query, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SectionsService } from './sections.service';
-import { CreateSectionDto } from './dto/create-section.dto';
+import { CreateSectionRequestDto } from './dto/create-section.dto';
 
 @ApiTags('Sections')
 @Controller('sections')
@@ -10,12 +10,12 @@ export class SectionsController {
 
   @Post()
   @ApiOperation({ summary: 'Create section' })
-  async create(@Body() body: CreateSectionDto) {
-    const result = await this.sectionsService.createSection(body);
+  async create(@Body() body: CreateSectionRequestDto) {
+    const result = await this.sectionsService.createSection(body.data);
     if (result && typeof result === 'object' && 'error' in result) {
       throw new BadRequestException(result.error);
     }
-    return result;
+    return { gid: result.gid, name: result.name };
   }
 
   @Get()

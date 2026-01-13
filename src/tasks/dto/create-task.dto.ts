@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateTaskDto {
   @ApiProperty({ example: "Implement API" })
@@ -31,4 +32,10 @@ export class CreateTaskDto {
   @IsBoolean()
   @IsOptional()
   completed?: boolean;
+}
+
+export class CreateTaskRequestDto {
+  @ValidateNested()
+  @Type(() => CreateTaskDto)
+  data: CreateTaskDto;
 }

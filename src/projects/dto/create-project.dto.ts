@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateProjectDto {
   @ApiProperty({ example: "Backend Rewrite" })
@@ -16,4 +17,20 @@ export class CreateProjectDto {
   @IsString()
   @IsOptional()
   gid?: string; // Added to match test payload
+
+  // Optional fields sometimes present in generated tests
+  @ApiProperty({ example: "This is a note", required: false })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @ApiProperty({ example: false, required: false })
+  @IsOptional()
+  completed?: boolean;
+}
+
+export class CreateProjectRequestDto {
+  @ValidateNested()
+  @Type(() => CreateProjectDto)
+  data: CreateProjectDto;
 }

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateTagDto {
   @ApiProperty({ example: 'P1' })
@@ -23,3 +24,8 @@ export class CreateTagDto {
   gid?: string;
 }
 
+export class CreateTagRequestDto {
+  @ValidateNested()
+  @Type(() => CreateTagDto)
+  data: CreateTagDto;
+}

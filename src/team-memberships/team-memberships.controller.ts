@@ -1,14 +1,14 @@
 import { Controller, Post, Get, Body, Param, Query, BadRequestException, NotFoundException } from '@nestjs/common';
 import { TeamMembershipsService } from './team-memberships.service';
-import { CreateTeamMembershipDto } from './dto/create-team-membership.dto';
+import { CreateTeamMembershipRequestDto } from './dto/create-team-membership.dto';
 
 @Controller('team-memberships')
 export class TeamMembershipsController {
   constructor(private teamMembershipsService: TeamMembershipsService) {}
 
   @Post()
-  async create(@Body() createTeamMembershipDto: CreateTeamMembershipDto) {
-    const result = await this.teamMembershipsService.create(createTeamMembershipDto);
+  async create(@Body() body: CreateTeamMembershipRequestDto) {
+    const result = await this.teamMembershipsService.create(body.data);
     if (result.error) {
       throw new BadRequestException(result.message);
     }
