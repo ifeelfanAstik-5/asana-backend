@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -11,7 +11,11 @@ export class UsersController {
   @Post()
   @ApiOperation({ summary: 'Create user' })
   async create(@Body() body: CreateUserDto) {
-    return this.usersService.createUser(body);
+    const result = await this.usersService.createUser(body);
+    if (result && typeof result === 'object' && 'error' in result) {
+      throw new NotFoundException(result.error);
+    }
+    return result;
   }
 
   @Get()
@@ -23,6 +27,10 @@ export class UsersController {
   @Get(':userGid')
   @ApiOperation({ summary: 'Get user by GID' })
   async getById(@Param('userGid') userGid: string) {
-    return this.usersService.getUserById(userGid);
+    const user = await this.usersService.getUserById(userGid);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 }

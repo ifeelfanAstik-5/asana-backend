@@ -9,7 +9,7 @@ export class TagsService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async createTag(payload: { name: string; workspaceGid: string; color?: string }) {
+  async createTag(payload: { name: string; workspaceGid: string; color?: string; gid?: string }) {
     if (!payload || !payload.name || !payload.workspaceGid) {
       return { error: 'Name and workspaceGid are required' };
     }
@@ -19,35 +19,30 @@ export class TagsService {
       return { error: 'Workspace does not exist' };
     }
 
-    const tag = await this.prisma.tag.create({
+    return this.prisma.tag.create({
       data: {
-        gid: crypto.randomUUID(),
+        gid: payload.gid || crypto.randomUUID(),
         name: payload.name,
         color: payload.color,
         workspace: { connect: { gid: payload.workspaceGid } },
       },
     });
-
-    return { data: tag };
   }
 
   async listTagsByWorkspace(workspaceGid: string) {
-    const data = await this.prisma.tag.findMany({
+    return this.prisma.tag.findMany({
       where: { workspace: { gid: workspaceGid } },
     });
-    return { data };
   }
 
   async listAll() {
-    const data = await this.prisma.tag.findMany();
-    return { data };
+    return this.prisma.tag.findMany();
   }
 
   async getTagById(tagGid: string) {
-    const tag = await this.prisma.tag.findUnique({
+    return this.prisma.tag.findUnique({
       where: { gid: tagGid },
     });
-    return { data: tag ?? null };
   }
 }
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TagsService } from './tags.service';
 import { CreateTagDto } from './dto/create-tag.dto';
@@ -11,7 +11,11 @@ export class TagsController {
   @Post()
   @ApiOperation({ summary: 'Create tag' })
   async create(@Body() body: CreateTagDto) {
-    return this.tagsService.createTag(body);
+    const result = await this.tagsService.createTag(body);
+    if (result && typeof result === 'object' && 'error' in result) {
+      throw new BadRequestException(result.error);
+    }
+    return result;
   }
 
   @Get()
@@ -26,6 +30,10 @@ export class TagsController {
   @Get(':tagGid')
   @ApiOperation({ summary: 'Get tag by GID' })
   async getById(@Param('tagGid') tagGid: string) {
-    return this.tagsService.getTagById(tagGid);
+    const tag = await this.tagsService.getTagById(tagGid);
+    if (!tag) {
+      throw new NotFoundException('Tag not found');
+    }
+    return tag;
   }
 }

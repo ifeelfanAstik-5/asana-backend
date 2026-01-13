@@ -13,6 +13,7 @@ export class TeamsService {
     name: string;
     workspaceGid: string;
     description?: string;
+    gid?: string;
   }) {
     if (!payload || !payload.name || !payload.workspaceGid) {
       return { error: 'Name and workspaceGid are required' };
@@ -23,9 +24,9 @@ export class TeamsService {
       return { error: 'Workspace does not exist' };
     }
 
-    const team = await this.prisma.team.create({
+    return this.prisma.team.create({
       data: {
-        gid: crypto.randomUUID(),
+        gid: payload.gid || crypto.randomUUID(),
         name: payload.name,
         description: payload.description,
         workspace: {
@@ -33,27 +34,22 @@ export class TeamsService {
         },
       },
     });
-
-    return { data: team };
   }
 
   async listTeamsByWorkspace(workspaceGid: string) {
-    const data = await this.prisma.team.findMany({
+    return this.prisma.team.findMany({
       where: { workspace: { gid: workspaceGid } },
     });
-    return { data };
   }
 
   async getTeamById(teamGid: string) {
-    const team = await this.prisma.team.findUnique({
+    return this.prisma.team.findUnique({
       where: { gid: teamGid },
     });
-    return { data: team ?? null };
   }
 
   async listAll() {
-    const data = await this.prisma.team.findMany();
-    return { data };
+    return this.prisma.team.findMany();
   }
 }
 

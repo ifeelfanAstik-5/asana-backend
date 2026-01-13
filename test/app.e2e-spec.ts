@@ -12,6 +12,10 @@ describe('Asana Backend Replica (e2e)', () => {
   let sharedWorkspaceGid: string;
   let sharedProjectGid: string;
   let sharedTaskGid: string;
+  let sharedUserGid: string;
+  let sharedTagGid: string;
+  let sharedTeamGid: string;
+  let sharedSectionGid: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -34,7 +38,11 @@ describe('Asana Backend Replica (e2e)', () => {
   afterAll(async () => {
     // Clean up test data to ensure repeatable runs
     await prisma.task.deleteMany();
+    await prisma.section.deleteMany();
     await prisma.project.deleteMany();
+    await prisma.tag.deleteMany();
+    await prisma.team.deleteMany();
+    await prisma.user.deleteMany();
     await prisma.workspace.deleteMany();
     await app.close();
   });
@@ -151,4 +159,234 @@ describe('Asana Backend Replica (e2e)', () => {
         .expect(400); // Or 404 depending on your Service implementation
     });
   });
-});
+  describe('Users Endpoint', () => {
+    it('POST /users - Should create a user', async () => {
+      const payload = {
+        name: 'John Doe',
+        email: 'john@example.com',
+        gid: 'user_101'
+      };
+      const response = await request(app.getHttpServer())
+        .post('/users')
+        .send(payload)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        name: payload.name,
+        email: payload.email,
+        gid: payload.gid
+      });
+      sharedUserGid = response.body.gid;
+    });
+
+    it('POST /users - [Edge Case] Fail on missing email', async () => {
+      await request(app.getHttpServer())
+        .post('/users')
+        .send({ name: 'Jane Doe', gid: 'user_fail' })
+        .expect(400);
+    });
+
+    it('GET /users - Should list users', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/users')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+    });
+
+    it('GET /users/:gid - Should get user by GID', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/users/${sharedUserGid}`)
+        .expect(200);
+
+      expect(response.body.gid).toBe(sharedUserGid);
+    });
+
+    it('GET /users/:gid - [Edge Case] 404 for invalid User ID', async () => {
+      await request(app.getHttpServer())
+        .get('/users/non_existent_user')
+        .expect(404);
+    });
+  });
+
+  describe('Tags Endpoint', () => {
+    it('POST /tags - Should create a tag', async () => {
+      const payload = {
+        name: 'Urgent',
+        workspaceGid: sharedWorkspaceGid,
+        color: 'red',
+        gid: 'tag_101'
+      };
+      const response = await request(app.getHttpServer())
+        .post('/tags')
+        .send(payload)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        name: payload.name,
+        gid: payload.gid
+      });
+      sharedTagGid = response.body.gid;
+    });
+
+    it('POST /tags - [Edge Case] Fail on missing name', async () => {
+      await request(app.getHttpServer())
+        .post('/tags')
+        .send({ workspaceGid: sharedWorkspaceGid, gid: 'tag_fail' })
+        .expect(400);
+    });
+
+    it('GET /tags - Should list all tags', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/tags')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+    });
+
+    it('GET /tags?workspaceGid=:gid - Should filter tags by workspace', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/tags?workspaceGid=${sharedWorkspaceGid}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.every(tag => tag.workspaceId)).toBe(true);
+    });
+
+    it('GET /tags/:gid - Should get tag by GID', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/tags/${sharedTagGid}`)
+        .expect(200);
+
+      expect(response.body.gid).toBe(sharedTagGid);
+    });
+
+    it('GET /tags/:gid - [Edge Case] 404 for invalid Tag ID', async () => {
+      await request(app.getHttpServer())
+        .get('/tags/non_existent_tag')
+        .expect(404);
+    });
+  });
+
+  describe('Teams Endpoint', () => {
+    it('POST /teams - Should create a team', async () => {
+      const payload = {
+        name: 'Engineering',
+        workspaceGid: sharedWorkspaceGid,
+        description: 'Engineering team',
+        gid: 'team_101'
+      };
+      const response = await request(app.getHttpServer())
+        .post('/teams')
+        .send(payload)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        name: payload.name,
+        gid: payload.gid
+      });
+      sharedTeamGid = response.body.gid;
+    });
+
+    it('POST /teams - [Edge Case] Fail on missing workspaceGid', async () => {
+      await request(app.getHttpServer())
+        .post('/teams')
+        .send({ name: 'Design', gid: 'team_fail' })
+        .expect(400);
+    });
+
+    it('GET /teams - Should list all teams', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/teams')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('GET /teams?workspaceGid=:gid - Should filter teams by workspace', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/teams?workspaceGid=${sharedWorkspaceGid}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      if (response.body.length > 0) {
+        expect(response.body[0].workspaceId).toBeDefined();
+      }
+    });
+
+    it('GET /teams/:gid - Should get team by GID', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/teams/${sharedTeamGid}`)
+        .expect(200);
+
+      expect(response.body.gid).toBe(sharedTeamGid);
+    });
+
+    it('GET /teams/:gid - [Edge Case] 404 for invalid Team ID', async () => {
+      await request(app.getHttpServer())
+        .get('/teams/non_existent_team')
+        .expect(404);
+    });
+  });
+
+  describe('Sections Endpoint', () => {
+    it('POST /sections - Should create a section', async () => {
+      const payload = {
+        name: 'Todo',
+        projectGid: sharedProjectGid,
+        gid: 'sec_101'
+      };
+      const response = await request(app.getHttpServer())
+        .post('/sections')
+        .send(payload)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        name: payload.name,
+        gid: payload.gid
+      });
+      sharedSectionGid = response.body.gid;
+    });
+
+    it('POST /sections - [Edge Case] Fail on missing projectGid', async () => {
+      await request(app.getHttpServer())
+        .post('/sections')
+        .send({ name: 'InProgress', gid: 'sec_fail' })
+        .expect(400);
+    });
+
+    it('GET /sections - Should list all sections', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/sections')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('GET /sections?projectGid=:gid - Should filter sections by project', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/sections?projectGid=${sharedProjectGid}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      if (response.body.length > 0) {
+        expect(response.body[0].projectId).toBeDefined();
+      }
+    });
+
+    it('GET /sections/:gid - Should get section by GID', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/sections/${sharedSectionGid}`)
+        .expect(200);
+
+      expect(response.body.gid).toBe(sharedSectionGid);
+    });
+
+    it('GET /sections/:gid - [Edge Case] 404 for invalid Section ID', async () => {
+      await request(app.getHttpServer())
+        .get('/sections/non_existent_section')
+        .expect(404);
+    });
+  });});

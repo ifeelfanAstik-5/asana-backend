@@ -9,7 +9,7 @@ export class SectionsService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async createSection(payload: { name: string; projectGid: string; order?: number }) {
+  async createSection(payload: { name: string; projectGid: string; order?: number; gid?: string }) {
     if (!payload || !payload.name || !payload.projectGid) {
       return { error: 'Name and projectGid are required' };
     }
@@ -27,35 +27,30 @@ export class SectionsService {
       payload.order ??
       (existing.length ? Math.max(...existing.map((s) => s.order)) + 1 : 0);
 
-    const section = await this.prisma.section.create({
+    return this.prisma.section.create({
       data: {
-        gid: crypto.randomUUID(),
+        gid: payload.gid || crypto.randomUUID(),
         name: payload.name,
         order,
         project: { connect: { gid: payload.projectGid } },
       },
     });
-
-    return { data: section };
   }
 
   async listSectionsByProject(projectGid: string) {
-    const data = await this.prisma.section.findMany({
+    return this.prisma.section.findMany({
       where: { project: { gid: projectGid } },
       orderBy: { order: 'asc' },
     });
-    return { data };
   }
 
   async listAll() {
-    const data = await this.prisma.section.findMany();
-    return { data };
+    return this.prisma.section.findMany();
   }
 
   async getSectionById(sectionGid: string) {
-    const section = await this.prisma.section.findUnique({
+    return this.prisma.section.findUnique({
       where: { gid: sectionGid },
     });
-    return { data: section ?? null };
   }
 }

@@ -5,32 +5,28 @@ import { PrismaService } from '../prisma/prisma.service';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createUser(payload: { name: string; email: string; photoUrl?: string }) {
+  async createUser(payload: { name: string; email: string; photoUrl?: string; gid?: string }) {
     if (!payload || !payload.name || !payload.email) {
       return { error: 'Name and email are required' };
     }
 
-    const user = await this.prisma.user.create({
+    return this.prisma.user.create({
       data: {
-        gid: crypto.randomUUID(),
+        gid: payload.gid || crypto.randomUUID(),
         name: payload.name,
         email: payload.email,
         photoUrl: payload.photoUrl,
       },
     });
-
-    return { data: user };
   }
 
   async listUsers() {
-    const data = await this.prisma.user.findMany();
-    return { data };
+    return this.prisma.user.findMany();
   }
 
   async getUserById(userGid: string) {
-    const user = await this.prisma.user.findUnique({
+    return this.prisma.user.findUnique({
       where: { gid: userGid },
     });
-    return { data: user ?? null };
   }
 }
