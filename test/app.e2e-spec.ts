@@ -42,6 +42,7 @@ describe('Asana Backend Replica (e2e)', () => {
   afterAll(async () => {
     // Clean up test data to ensure repeatable runs
     await prisma.story.deleteMany();
+    await prisma.goal.deleteMany();
     await prisma.task.deleteMany();
     await prisma.section.deleteMany();
     await prisma.project.deleteMany();
@@ -52,7 +53,7 @@ describe('Asana Backend Replica (e2e)', () => {
     await prisma.user.deleteMany();
     await prisma.workspace.deleteMany();
     await app.close();
-  });
+  }, 15000);
 
   describe('Workspaces Endpoint', () => {
     it('POST /workspaces - Should create a workspace', async () => {
@@ -457,10 +458,34 @@ describe('Asana Backend Replica (e2e)', () => {
   });
 
   describe('Stories Endpoint', () => {
+    let storyTestTaskGid: string;
+    
+    beforeAll(async () => {
+      // Create a task for story tests  
+      const projectResponse = await request(app.getHttpServer())
+        .post('/projects')
+        .send({
+          name: 'Story Test Project',
+          workspaceGid: sharedWorkspaceGid,
+          gid: 'proj_story_test'
+        });
+      
+      const taskResponse = await request(app.getHttpServer())
+        .post('/tasks')
+        .send({
+          name: 'Story Test Task',
+          projectGid: projectResponse.body.gid,
+          workspaceGid: sharedWorkspaceGid,
+          gid: 'task_story_test'
+        });
+      
+      storyTestTaskGid = taskResponse.body.gid;
+    });
+
     it('POST /stories - Should create a story/comment on task', async () => {
       const payload = {
         text: 'This is a comment',
-        taskGid: sharedTaskGid,
+        taskGid: storyTestTaskGid,
         gid: 'story_101'
       };
       const response = await request(app.getHttpServer())
@@ -478,7 +503,7 @@ describe('Asana Backend Replica (e2e)', () => {
     it('POST /stories - [Edge Case] Fail on missing text', async () => {
       await request(app.getHttpServer())
         .post('/stories')
-        .send({ taskGid: sharedTaskGid, gid: 'story_fail' })
+        .send({ taskGid: storyTestTaskGid, gid: 'story_fail' })
         .expect(400);
     });
 
@@ -492,7 +517,7 @@ describe('Asana Backend Replica (e2e)', () => {
 
     it('GET /stories?taskGid=:gid - Should filter stories by task', async () => {
       const response = await request(app.getHttpServer())
-        .get(`/stories?taskGid=${sharedTaskGid}`)
+        .get(`/stories?taskGid=${storyTestTaskGid}`)
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
