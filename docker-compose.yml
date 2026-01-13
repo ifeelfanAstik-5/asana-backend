@@ -1,0 +1,21 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: asana
+      POSTGRES_USER: asana
+      POSTGRES_PASSWORD: asana
+    ports:
+      - "5432:5432"
+
+  asana-backend:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://neondb_owner:npg_Y6K2IUTZqbQE@ep-gentle-cloud-afnzuujx-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+    depends_on:
+      - db

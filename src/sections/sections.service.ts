@@ -1,51 +1,61 @@
 import { Injectable } from '@nestjs/common';
-import { InMemoryRepository } from '../common/inmemory.repository';
-import { Section } from './section.entity';
 import { ProjectsService } from '../projects/projects.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class SectionsService extends InMemoryRepository<Section> {
-  constructor(private readonly projectsService: ProjectsService) {
-    super();
-  }
+export class SectionsService {
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  createSection(payload: { name: string; projectGid: string; order?: number }) {
+  async createSection(payload: { name: string; projectGid: string; order?: number }) {
     if (!payload || !payload.name || !payload.projectGid) {
       return { error: 'Name and projectGid are required' };
     }
 
-    const project = this.projectsService.findById(payload.projectGid);
+    const project = await this.projectsService.findById(payload.projectGid);
     if (!project) {
       return { error: 'Project does not exist' };
     }
 
-    const existing = this.findAll().filter(
-      (s) => s.projectGid === payload.projectGid,
-    );
+    const existing = await this.prisma.section.findMany({
+      where: { project: { gid: payload.projectGid } },
+    });
+
     const order =
       payload.order ??
       (existing.length ? Math.max(...existing.map((s) => s.order)) + 1 : 0);
 
-    const section: Section = {
-      gid: crypto.randomUUID(),
-      name: payload.name,
-      projectGid: payload.projectGid,
-      order,
-      createdAt: new Date().toISOString(),
-    };
+    const section = await this.prisma.section.create({
+      data: {
+        gid: crypto.randomUUID(),
+        name: payload.name,
+        order,
+        project: { connect: { gid: payload.projectGid } },
+      },
+    });
 
-    this.create(section);
     return { data: section };
   }
 
-  listSectionsByProject(projectGid: string) {
-    const data = this.findAll()
-      .filter((s) => s.projectGid === projectGid)
-      .sort((a, b) => a.order - b.order);
+  async listSectionsByProject(projectGid: string) {
+    const data = await this.prisma.section.findMany({
+      where: { project: { gid: projectGid } },
+      orderBy: { order: 'asc' },
+    });
     return { data };
   }
 
-  getSectionById(sectionGid: string) {
-    return { data: this.findById(sectionGid) ?? null };
+  async listAll() {
+    const data = await this.prisma.section.findMany();
+    return { data };
+  }
+
+  async getSectionById(sectionGid: string) {
+    const section = await this.prisma.section.findUnique({
+      where: { gid: sectionGid },
+    });
+    return { data: section ?? null };
   }
 }

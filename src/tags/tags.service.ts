@@ -1,43 +1,53 @@
 import { Injectable } from '@nestjs/common';
-import { InMemoryRepository } from '../common/inmemory.repository';
-import { Tag } from './tag.entity';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class TagsService extends InMemoryRepository<Tag> {
-  constructor(private readonly workspacesService: WorkspacesService) {
-    super();
-  }
+export class TagsService {
+  constructor(
+    private readonly workspacesService: WorkspacesService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  createTag(payload: { name: string; workspaceGid: string; color?: string }) {
+  async createTag(payload: { name: string; workspaceGid: string; color?: string }) {
     if (!payload || !payload.name || !payload.workspaceGid) {
       return { error: 'Name and workspaceGid are required' };
     }
 
-    const workspace = this.workspacesService.findById(payload.workspaceGid);
+    const workspace = await this.workspacesService.findById(payload.workspaceGid);
     if (!workspace) {
       return { error: 'Workspace does not exist' };
     }
 
-    const tag: Tag = {
-      gid: crypto.randomUUID(),
-      name: payload.name,
-      workspaceGid: payload.workspaceGid,
-      color: payload.color,
-      createdAt: new Date().toISOString(),
-    };
+    const tag = await this.prisma.tag.create({
+      data: {
+        gid: crypto.randomUUID(),
+        name: payload.name,
+        color: payload.color,
+        workspace: { connect: { gid: payload.workspaceGid } },
+      },
+    });
 
-    this.create(tag);
     return { data: tag };
   }
 
-  listTagsByWorkspace(workspaceGid: string) {
-    const data = this.findAll().filter((t) => t.workspaceGid === workspaceGid);
+  async listTagsByWorkspace(workspaceGid: string) {
+    const data = await this.prisma.tag.findMany({
+      where: { workspace: { gid: workspaceGid } },
+    });
     return { data };
   }
 
-  getTagById(tagGid: string) {
-    return { data: this.findById(tagGid) ?? null };
+  async listAll() {
+    const data = await this.prisma.tag.findMany();
+    return { data };
+  }
+
+  async getTagById(tagGid: string) {
+    const tag = await this.prisma.tag.findUnique({
+      where: { gid: tagGid },
+    });
+    return { data: tag ?? null };
   }
 }
 

@@ -1,0 +1,170 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Core entities mirroring the in-memory model
+
+model Workspace {
+  id        String                @id @default(cuid())
+  gid       String                @unique
+  name      String
+  createdAt DateTime              @default(now())
+  projects  Project[]
+  tags      Tag[]
+  teams     Team[]
+  members   WorkspaceMembership[]
+  tasks     Task[]
+}
+
+model User {
+  id              String                @id @default(cuid())
+  gid             String                @unique
+  name            String
+  email           String                @unique
+  photoUrl        String?
+  createdAt       DateTime              @default(now())
+  memberships     WorkspaceMembership[]
+  teamMemberships TeamMembership[]
+  tasksAssigned   Task[]                @relation("TaskAssignee")
+  stories         Story[]
+  // followers inverse many-to-many
+  followingTasks  Task[]                @relation("TaskFollowers")
+}
+
+model Team {
+  id          String           @id @default(cuid())
+  gid         String           @unique
+  name        String
+  description String?
+  createdAt   DateTime         @default(now())
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  memberships TeamMembership[]
+  projects    Project[]
+}
+
+model WorkspaceMembership {
+  id          String        @id @default(cuid())
+  gid         String        @unique
+  role        WorkspaceRole
+  createdAt   DateTime      @default(now())
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+
+  @@unique([userId, workspaceId])
+}
+
+model TeamMembership {
+  id        String   @id @default(cuid())
+  gid       String   @unique
+  role      TeamRole
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId    String
+
+  @@unique([userId, teamId])
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  gid         String    @unique
+  name        String
+  notes       String?
+  archived    Boolean   @default(false)
+  ownerGid    String?
+  color       String?
+  dueOn       DateTime?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  tasks       Task[]
+  sections    Section[]
+  tags        Tag[]     @relation("ProjectTags")
+  team        Team?     @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  teamId      String?
+}
+
+model Section {
+  id        String   @id @default(cuid())
+  gid       String   @unique
+  name      String
+  order     Int
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  tasks     Task[]
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  gid         String    @unique
+  name        String
+  notes       String?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  dueOn       DateTime?
+  createdAt   DateTime  @default(now())
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  section     Section?  @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  sectionId   String?
+  assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  assigneeId  String?
+  parent      Task?     @relation("Subtasks", fields: [parentId], references: [id], onDelete: SetNull)
+  parentId    String?
+  subtasks    Task[]    @relation("Subtasks")
+  tags        Tag[]     @relation("TaskTags")
+  followers   User[]    @relation("TaskFollowers")
+  stories     Story[]
+}
+
+model Tag {
+  id          String    @id @default(cuid())
+  gid         String    @unique
+  name        String
+  color       String?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  projects    Project[] @relation("ProjectTags")
+  tasks       Task[]    @relation("TaskTags")
+}
+
+model Story {
+  id          String   @id @default(cuid())
+  gid         String   @unique
+  text        String
+  isComment   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId      String
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+}
+
+enum WorkspaceRole {
+  member
+  admin
+}
+
+enum TeamRole {
+  member
+  admin
+}

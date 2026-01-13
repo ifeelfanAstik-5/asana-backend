@@ -1,45 +1,62 @@
 import { Injectable } from '@nestjs/common';
-import { InMemoryRepository } from '../common/inmemory.repository';
 import { Project } from './project.entity';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class ProjectsService extends InMemoryRepository<Project> {
-  constructor(private readonly workspacesService: WorkspacesService) {
-    super();
-  }
+export class ProjectsService {
+  constructor(
+    private readonly workspacesService: WorkspacesService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  createProject(payload: { name: string; workspaceGid: string }) {
+  async createProject(payload: { name: string; workspaceGid: string }) {
     if (!payload || !payload.name || !payload.workspaceGid) {
       return { error: 'Name and workspaceGid required' };
     }
 
-    const workspace = this.workspacesService.findById(payload.workspaceGid);
+    const workspace = await this.workspacesService.findById(
+      payload.workspaceGid,
+    );
     if (!workspace) {
       return { error: 'Workspace does not exist' };
     }
 
-    const project: Project = {
-      gid: crypto.randomUUID(),
-      name: payload.name,
-      workspaceGid: payload.workspaceGid,
-      createdAt: new Date().toISOString(),
-    };
+    const project = await this.prisma.project.create({
+      data: {
+        gid: crypto.randomUUID(),
+        name: payload.name,
+        workspace: {
+          connect: { gid: payload.workspaceGid },
+        },
+      },
+    });
 
-    this.create(project);
     return { data: project };
   }
 
-  listProjects() {
-    return { data: this.findAll() };
-  }
-
-  getByWorkspace(workspaceGid: string) {
-    const data = this.findAll().filter(p => p.workspaceGid === workspaceGid);
+  async listProjects() {
+    const data = await this.prisma.project.findMany();
     return { data };
   }
 
-  getByIdWrapped(projectGid: string) {
-    return { data: this.findById(projectGid) ?? null };
+  async getByWorkspace(workspaceGid: string) {
+    const data = await this.prisma.project.findMany({
+      where: { workspace: { gid: workspaceGid } },
+    });
+    return { data };
+  }
+
+  async getByIdWrapped(projectGid: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { gid: projectGid },
+    });
+    return { data: project ?? null };
+  }
+
+  async findById(projectGid: string) {
+    return this.prisma.project.findUnique({
+      where: { gid: projectGid },
+    });
   }
 }

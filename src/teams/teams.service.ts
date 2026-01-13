@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { InMemoryRepository } from '../common/inmemory.repository';
-import { Team } from './team.entity';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class TeamsService extends InMemoryRepository<Team> {
-  constructor(private readonly workspacesService: WorkspacesService) {
-    super();
-  }
+export class TeamsService {
+  constructor(
+    private readonly workspacesService: WorkspacesService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  createTeam(payload: {
+  async createTeam(payload: {
     name: string;
     workspaceGid: string;
     description?: string;
@@ -18,30 +18,42 @@ export class TeamsService extends InMemoryRepository<Team> {
       return { error: 'Name and workspaceGid are required' };
     }
 
-    const workspace = this.workspacesService.findById(payload.workspaceGid);
+    const workspace = await this.workspacesService.findById(payload.workspaceGid);
     if (!workspace) {
       return { error: 'Workspace does not exist' };
     }
 
-    const team: Team = {
-      gid: crypto.randomUUID(),
-      name: payload.name,
-      workspaceGid: payload.workspaceGid,
-      description: payload.description,
-      createdAt: new Date().toISOString(),
-    };
+    const team = await this.prisma.team.create({
+      data: {
+        gid: crypto.randomUUID(),
+        name: payload.name,
+        description: payload.description,
+        workspace: {
+          connect: { gid: payload.workspaceGid },
+        },
+      },
+    });
 
-    this.create(team);
     return { data: team };
   }
 
-  listTeamsByWorkspace(workspaceGid: string) {
-    const data = this.findAll().filter((t) => t.workspaceGid === workspaceGid);
+  async listTeamsByWorkspace(workspaceGid: string) {
+    const data = await this.prisma.team.findMany({
+      where: { workspace: { gid: workspaceGid } },
+    });
     return { data };
   }
 
-  getTeamById(teamGid: string) {
-    return { data: this.findById(teamGid) ?? null };
+  async getTeamById(teamGid: string) {
+    const team = await this.prisma.team.findUnique({
+      where: { gid: teamGid },
+    });
+    return { data: team ?? null };
+  }
+
+  async listAll() {
+    const data = await this.prisma.team.findMany();
+    return { data };
   }
 }
 

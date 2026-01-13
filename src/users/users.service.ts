@@ -1,31 +1,36 @@
 import { Injectable } from '@nestjs/common';
-import { InMemoryRepository } from '../common/inmemory.repository';
-import { User } from './user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class UsersService extends InMemoryRepository<User> {
-  createUser(payload: { name: string; email: string; photoUrl?: string }) {
+export class UsersService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async createUser(payload: { name: string; email: string; photoUrl?: string }) {
     if (!payload || !payload.name || !payload.email) {
       return { error: 'Name and email are required' };
     }
 
-    const user: User = {
-      gid: crypto.randomUUID(),
-      name: payload.name,
-      email: payload.email,
-      photoUrl: payload.photoUrl,
-      createdAt: new Date().toISOString(),
-    };
+    const user = await this.prisma.user.create({
+      data: {
+        gid: crypto.randomUUID(),
+        name: payload.name,
+        email: payload.email,
+        photoUrl: payload.photoUrl,
+      },
+    });
 
-    this.create(user);
     return { data: user };
   }
 
-  listUsers() {
-    return { data: this.findAll() };
+  async listUsers() {
+    const data = await this.prisma.user.findMany();
+    return { data };
   }
 
-  getUserById(userGid: string) {
-    return { data: this.findById(userGid) ?? null };
+  async getUserById(userGid: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { gid: userGid },
+    });
+    return { data: user ?? null };
   }
 }
